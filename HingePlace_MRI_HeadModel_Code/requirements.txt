@@ -1,0 +1,5 @@
+cvxpy==1.5.2
+matplotlib==3.7.5
+numpy==1.22.3
+scikit_learn==0.24.1
+scipy==1.5.4
