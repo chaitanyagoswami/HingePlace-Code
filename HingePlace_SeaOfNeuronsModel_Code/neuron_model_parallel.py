@@ -1,20 +1,10 @@
 import ray
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.animation as animation
-from matplotlib import cm
-
 import os
-import time
 from scipy.signal import find_peaks
-from sklearn.linear_model import LinearRegression as lin_fit
-from elec_field import UniformField, sparse_place_rodent, ICMS, sparse_place_NHP
-from pulse_train import PulseTrain_BiPhasic, PulseTrain_MonoPhasic
-from allensdk.core.reference_space_cache import ReferenceSpaceCache
 import plotly
-import logging
 os.environ["RAY_DEDUP_LOGS"] = "0"
 #os.environ['RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE']='1'
 #ray.init(log_to_driver=False, logging_level=logging.FATAL)
@@ -61,11 +51,10 @@ class NeuronSim:
                             "L4_LBC_cACint209_1","L4_LBC_cACint209_2","L4_LBC_cACint209_3","L4_LBC_cACint209_4","L4_LBC_cACint209_5",\
                             "L5_TTPC2_cADpyr232_1","L5_TTPC2_cADpyr232_2","L5_TTPC2_cADpyr232_3","L5_TTPC2_cADpyr232_4","L5_TTPC2_cADpyr232_5",\
                             "L6_TPC_L4_cADpyr231_1","L6_TPC_L4_cADpyr231_2","L6_TPC_L4_cADpyr231_3","L6_TPC_L4_cADpyr231_4","L6_TPC_L4_cADpyr231_5"]
-                
-                self.gid_lst =[1,1,1,1,1,35954]
+
                 if cell_id is None:
-                    for i in range(len(cell_dict)):
-                        print("Choose cell id  %d for the cell model %s"%(i+1,cell_dict[i]))
+                    for i in range(len(self.cell_dict)):
+                        print("Choose cell id  %d for the cell model %s"%(i+1,self.cell_dict[i]))
                     cell_id = int(input("Input the desired cell id:"))
                 self.cell_id = cell_id
                 h('cell_chooser(%s)'%str(cell_id))
