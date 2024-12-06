@@ -10,11 +10,9 @@ np.set_printoptions(suppress=True)
 ##################################################################################################################################
 ################################ Directory Structure & Parallelization Params #####3##############################################
 os.environ['RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE']='1'
-ray.init(log_to_driver=False, logging_level=logging.FATAL)
-#ray.init()
-NUM_CORES = 25
+ray.init()
 
-main_dir = os.path.join(os.getcwd(), 'HingePlace/HP-L1L1-equivalence_ver2')
+main_dir = os.path.join(os.getcwd(), 'HingePlace/HP-L1L1-equivalence')
 if not os.path.exists(main_dir):
     os.makedirs(main_dir)
 
@@ -22,6 +20,13 @@ matrice_dir = os.path.join('HingePlace/HP_EfieldSim/HP_Field_Matrices')
 if not os.path.exists(matrice_dir):
     os.makedirs(matrice_dir)
 
+efield_dir = os.path.join(main_dir,'HP_EfieldSim')
+if not os.path.exists(efield_dir):
+    os.makedirs(efield_dir)
+
+patch_dir = os.path.join(efield_dir,'HP_Patch')
+if not os.path.exists(patch_dir):
+    os.makedirs(patch_dir)
 ##################################################################################################################################    
 
 radius_head = 9.2 # cm
@@ -52,15 +57,13 @@ custom_grid = False
 theta_elec, phi_elec = None, None
 
 ## Depths for which E-field is calculated 
-r_neuron = np.linspace(7.7, 8, 40)
-r_lst=np.concatenate([r_neuron,np.array([radius_head-depth_nerve])])
-
-CREATE_NEW_MODEL = False ## Set to True to create a new model
+r_lst = np.linspace(7.7, 8, 40)
 forward_model_path = os.path.join(matrice_dir,'Patch%dmm'%(int(patch_size*10))) ## Directory Path where the model is saved or needs to be saved
 
 ## Electric Field Simulator
 efield_sim = SphericalHeadModel(r_lst=r_lst,cond_vec=cond_vec,radius_vec=radius_vec,patch_size=patch_size,elec_radius=elec_radius,elec_spacing=elec_spacing,max_l=L,spacing=spacing,custom_grid=custom_grid,theta_elec=theta_elec,phi_elec=phi_elec, save_title=forward_model_path) 
 efield_sim._load_forward_model(forward_model_path) 
+
 ## Plot Patch Reference for numbering of electrodes
 num_elec = efield_sim._return_num_electrodes()
 PLOT_PATCH_REF = False

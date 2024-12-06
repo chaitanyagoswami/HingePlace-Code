@@ -10,15 +10,13 @@ from CancelPoints import CancelPointsSpherical
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 600
-
-input_baseline_pttrn = int(sys.argv[1]) 
-
+input_baseline_pttrn = int(sys.argv[1])
 ##################################################################################################################################
 ################################ Directory Structure & Parallelization Params #####3##############################################
 os.environ['RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE']='1'
 ray.init(log_to_driver=False, logging_level=logging.FATAL)
 #ray.init() ### Uncomment to see all the messages from the back-end
-NUM_CORES = 25
+NUM_CORES = 20
 
 main_dir = os.path.join(os.getcwd(), 'HingePlace')
 if not os.path.exists(main_dir):
@@ -46,7 +44,7 @@ if not os.path.exists(neuron_dir):
 results_dir = os.path.join(main_dir, 'Results')
 if not os.path.exists(results_dir):
     os.makedirs(results_dir)
-##################################################################################################################################    
+##################################################################################################################################
 
 radius_head = 9.2 # cm
 depth_nerve = 0.1 ## cm
@@ -75,21 +73,18 @@ spacing = 0.05
 custom_grid = False
 theta_elec, phi_elec = None, None
 
-## Depths for which E-field is calculated 
-r_neuron = np.linspace(7.7, 8, 40)
-r_lst=np.concatenate([r_neuron,np.array([radius_head-depth_nerve])])
+## Depths for which E-field is calculated
+r_lst = np.linspace(7.7, 8, 40)
 
-CREATE_NEW_MODEL = True ## Set to True to create a new model
+CREATE_NEW_MODEL = False## Set to True to create a new model
 forward_model_path = os.path.join(matrice_dir,'Patch%dmm'%(int(patch_size*10))) ## Directory Path where the model is saved or needs to be saved
 
 ## Electric Field Simulator
-efield_sim = SphericalHeadModel(r_lst=r_lst,cond_vec=cond_vec,radius_vec=radius_vec,patch_size=patch_size,elec_radius=elec_radius,elec_spacing=elec_spacing,max_l=L,spacing=spacing,custom_grid=custom_grid,theta_elec=theta_elec,phi_elec=phi_elec, save_title=forward_model_path) 
-
+efield_sim = SphericalHeadModel(r_lst=r_lst,cond_vec=cond_vec,radius_vec=radius_vec,patch_size=patch_size,elec_radius=elec_radius,elec_spacing=elec_spacing,max_l=L,spacing=spacing,custom_grid=custom_grid,theta_elec=theta_elec,phi_elec=phi_elec, save_title=forward_model_path)
 if CREATE_NEW_MODEL:
     efield_sim._calc_forward_model(print_elec_pattern=False, save=True, save_title=forward_model_path)
 else:
-    efield_sim._load_forward_model(forward_model_path) 
-
+    efield_sim._load_forward_model(forward_model_path)
 
 ## Plot Patch Reference for numbering of electrodes
 num_elec = efield_sim._return_num_electrodes()
@@ -123,7 +118,7 @@ cell_id_pyr_lst = np.array([16]) ## Different Morphology for L23 Pyr Cells
 temp_neuron = 37 ## celsius
 dt_neuron = 0.025 ## ms
 delay_init_neuron, delay_final_neuron = 2000, 2 ## ms
-num_neurons = 800
+num_neurons = 5
 theta_max = np.pi/2-14/radius_head ## radians
 
 if input_baseline_pttrn == 1:
@@ -374,33 +369,33 @@ pw = 0.2 ## ms
 amp_array, time_array = pulse_train.amp_train(amp=amp, delay=delay, total_time=total_time, pw=pw, sampling_rate=sampling_rate)
 amp_array_lst = [amp_array]+[None]*7
 scale_lst = [1] +[None]*7
-
 #########
-## Figuring out J-tol (E_tol in the manuscriot). All the tuning is done for a specific value of Isafety and Itotal. This value is used for the whole experiment for that technique. For example, for Sec: 5-1-1, the initial Jtol number is found at 
-## Isafety=150mA, and Itotal=4, but is used for all values of Isafety and Itot. If the HingePlace performs worse than LCMV-E at certain values of Isafety and Itot, then we re-tune it to find a new value of Jtol to be used for those values of Isafety 
-## and Itot. To see the full potential of HingePlace, we recommend tuning Jtol for each Isafety and Itot but since this can be computationally expensive, we use this ad-hoc way of finding Jtol hyperparameters. Please ensure that you use a different 
+## Figuring out J-tol (E_tol in the manuscriot). All the tuning is done for a specific value of Isafety and Itotal. This value is used for the whole experiment for that technique. For example, for Sec: 5-1-1, the initial Jtol number is found at
+## Isafety=150mA, and Itotal=4, but is used for all values of Isafety and Itot. If the HingePlace performs worse than LCMV-E at certain values of Isafety and Itot, then we re-tune it to find a new value of Jtol to be used for those values of Isafety
+## and Itot. To see the full potential of HingePlace, we recommend tuning Jtol for each Isafety and Itot but since this can be computationally expensive. We use this ad-hoc way of finding Jtol hyperparameters. Please ensure that you use a different
 ## filename while re-running the tuning code as mentioned above.
 #########
-Jtol_tuning = True
-tuning_dir = os.path.join(hp_pttrn_dir,'J-tol_Tuning')
-if not os.path.exists(tuning_dir):
-    os.makedirs(tuning_dir)
+Jtol_tuning_once = True
+USE_TUNING_CODE =True
+if Jtol_tuning_once and USE_TUNING_CODE:
+    tuning_dir = os.path.join(hp_pttrn_dir,'J-tol_Tuning')
+    if not os.path.exists(tuning_dir):
+        os.makedirs(tuning_dir)
 
-LOAD = False
-if Jtol_tuning:
-    num_points = 30 
+    LOAD = False
+    num_points = 30
     np.random.seed(SEED)
     rand_tol = np.random.uniform(low=0.1, high=0.7, size=(num_points,3))
     Jtol_HP_spikes_lst = []
-    Jtol_HP2_spikes_lst = [] 
+    Jtol_HP2_spikes_lst = []
     Jtol_HP3_spikes_lst = []
     if not LOAD:
         for i in range(rand_tol.shape[0]):
             print(">>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
             print("Iteration %d"%(i+1))
             print(">>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
-            
-            if input_baseline_pttrn == 1:     
+
+            if input_baseline_pttrn == 1:
                 Isafety = 150 ## Tunded for the middle injected current
                 Itotal = 2*Isafety*4 ## Allow for HingePlace to design effective patterns
             elif input_baseline_pttrn == 2:
@@ -423,25 +418,23 @@ if Jtol_tuning:
                     Isafety  = 200
                     Itotal = 2*Isafety*6
 
-            Jtol = [rand_tol[i,0]*Jdes,rand_tol[i,1]*Jdes,rand_tol[i,2]*Jdes]   
+            Jtol = [rand_tol[i,0]*Jdes,rand_tol[i,1]*Jdes,rand_tol[i,2]*Jdes]
             J_HP = efield_sim.HingePlace_3d(direction=direction, Jdes=Jdes, Isafety=Isafety, Jtol=Jtol, Itotal=Itotal, Af=[Af_x, Af_y, Af_z], Ac=[Ac_x, Ac_y, Ac_z], p=1)
             J_HP2 = efield_sim.HingePlace_3d(direction=direction, Jdes=Jdes, Isafety=Isafety, Jtol=Jtol, Itotal=Itotal, Af=[Af_x, Af_y, Af_z], Ac=[Ac_x, Ac_y, Ac_z], p=2)
             J_HP3 = efield_sim.HingePlace_3d(direction=direction, Jdes=Jdes, Isafety=Isafety, Jtol=Jtol, Itotal=Itotal, Af=[Af_x, Af_y, Af_z], Ac=[Ac_x, Ac_y, Ac_z], p=3)
-            
+
             efield_sim._setJ(J_HP)
             J_lst = [J_HP]+[np.zeros(num_elec)]*7
             efield_sim._setJ_lst(J_lst)
-            elec_field_lst = [efield_sim]+[None]*7
             spikes_nerve_HP, _ = model.stimulate(time_array=time_array, amp_array_lst=amp_array_lst, scale_lst=scale_lst, sampling_rate=sampling_rate, elec_field=efield_sim, scalp_flag=False)
             fname = os.path.join(tuning_dir,'HP_tuning_cortex_activation%d.png'%i)
             model.plot_cortex_activation(savepath=fname, show=False)
             np.save(os.path.join(tuning_dir, "SpikesHP_Jtol%d.npy"%i), spikes_nerve_HP)
             np.save(os.path.join(tuning_dir, "Jtol%d_HP.npy"%i), rand_tol[i])
-            
+
             efield_sim._setJ(J_HP2)
             J_lst = [J_HP2]+[np.zeros(num_elec)]*7
             efield_sim._setJ_lst(J_lst)
-            elec_field_lst = [efield_sim]+[None]*7
             spikes_nerve_HP, _ = model.stimulate(time_array=time_array, amp_array_lst=amp_array_lst, scale_lst=scale_lst, sampling_rate=sampling_rate, elec_field=efield_sim, scalp_flag=False)
             fname = os.path.join(tuning_dir,'HP2_tuning_cortex_activation%d.png'%i)
             model.plot_cortex_activation(savepath=fname, show=False)
@@ -451,43 +444,42 @@ if Jtol_tuning:
             efield_sim._setJ(J_HP3)
             J_lst = [J_HP3]+[np.zeros(num_elec)]*7
             efield_sim._setJ_lst(J_lst)
-            elec_field_lst = [efield_sim]+[None]*7
-            spikes_nerve_HP, _ = model.stimulate(time_array=time_array, amp_array_lst=amp_array_lst, scale_lst=scale_lst, sampling_rate=sampling_rate, elec_field=efield_sim, scalp_flag=False)
+            spikes_nerve_HP3, _ = model.stimulate(time_array=time_array, amp_array_lst=amp_array_lst, scale_lst=scale_lst, sampling_rate=sampling_rate, elec_field=efield_sim, scalp_flag=False)
             fname = os.path.join(tuning_dir,'HP3_tuning_cortex_activation%d.png'%i)
             model.plot_cortex_activation(savepath=fname, show=False)
             np.save(os.path.join(tuning_dir, "SpikesHP3_Jtol%d.npy"%i), spikes_nerve_HP)
             np.save(os.path.join(tuning_dir, "Jtol%d_HP3.npy"%i), rand_tol[i])
-    
+
     for i in range(rand_tol.shape[0]):
         fname = os.path.join(tuning_dir, "SpikesHP_Jtol%d.npy"%i)
         if os.path.exists(fname):
             spikes_nerve_HP = np.load(fname)
-            Jtol_HP_spikes_lst.append(np.sum(spikes_nerve_HP)) 
+            Jtol_HP_spikes_lst.append(np.sum(spikes_nerve_HP))
         else:
-            Jtol_HP_spikes_lst.append(np.inf) 
-        
+            Jtol_HP_spikes_lst.append(np.inf)
+
         fname = os.path.join(tuning_dir, "SpikesHP2_Jtol%d.npy"%i)
         if os.path.exists(fname):
             spikes_nerve_HP2 = np.load(fname)
-            Jtol_HP2_spikes_lst.append(np.sum(spikes_nerve_HP2)) 
+            Jtol_HP2_spikes_lst.append(np.sum(spikes_nerve_HP2))
         else:
             Jtol_HP2_spikes_lst.append(np.inf)
-        
+
         fname = os.path.join(tuning_dir, "SpikesHP3_Jtol%d.npy"%i)
         if os.path.exists(fname):
-            spikes_nerve_HP = np.load(fname)
-            Jtol_HP3_spikes_lst.append(np.sum(spikes_nerve_HP3)) 
+            spikes_nerve_HP3 = np.load(fname)
+            Jtol_HP3_spikes_lst.append(np.sum(spikes_nerve_HP3))
         else:
             Jtol_HP3_spikes_lst.append(np.inf)
-    
+
     Jtol_HP_spikes_lst = np.array(Jtol_HP_spikes_lst)
     np.save(os.path.join(tuning_dir, "JtolSpikes_lst_HP.npy"), Jtol_HP_spikes_lst)
     np.save(os.path.join(tuning_dir, "Jtol_lst_HP.npy"), rand_tol)
-    
+
     Jtol_HP2_spikes_lst = np.array(Jtol_HP2_spikes_lst)
     np.save(os.path.join(tuning_dir, "JtolSpikes_lst_HP2.npy"), Jtol_HP2_spikes_lst)
-    np.save(os.path.join(tuning_dir, "Jtol_lst_HP2.npy"), rand_tol)  
-    
+    np.save(os.path.join(tuning_dir, "Jtol_lst_HP2.npy"), rand_tol)
+
     Jtol_HP3_spikes_lst = np.array(Jtol_HP3_spikes_lst)
     np.save(os.path.join(tuning_dir, "JtolSpikes_lst_HP3.npy"), Jtol_HP3_spikes_lst)
     np.save(os.path.join(tuning_dir, "Jtol_lst_HP3.npy"), rand_tol)
@@ -501,7 +493,7 @@ if Jtol_tuning:
     plt.tight_layout()
     plt.savefig(os.path.join(tuning_dir,"TuningBarPlot_HP.png"))
     plt.close()
-    
+
     xlabels = np.arange(rand_tol.shape[0])+1
     plt.barh(xlabels, list(Jtol_HP2_spikes_lst))
     plt.xlabel("Diff. Jtol configurations", fontsize=19)
@@ -511,7 +503,7 @@ if Jtol_tuning:
     plt.tight_layout()
     plt.savefig(os.path.join(tuning_dir,"TuningBarPlot_HP2.png"))
     plt.close()
-    
+
     xlabels = np.arange(rand_tol.shape[0])+1
     plt.barh(xlabels, list(Jtol_HP3_spikes_lst))
     plt.xlabel("Diff. Jtol configurations", fontsize=19)
@@ -522,8 +514,6 @@ if Jtol_tuning:
     plt.savefig(os.path.join(tuning_dir,"TuningBarPlot_HP3.png"))
     plt.close()
 
-USE_TUNING_CODE =True
-if USE_TUNING_CODE:
     Jtol_HP_spikes_lst = np.load(os.path.join(tuning_dir, "JtolSpikes_lst_HP.npy"))
     rand_tol_HP = np.load(os.path.join(tuning_dir, "Jtol_lst_HP.npy"))
     Jtol_best_HP = rand_tol[np.argmin(Jtol_HP_spikes_lst)]
@@ -535,13 +525,14 @@ if USE_TUNING_CODE:
     Jtol_HP3_spikes_lst_HP3 = np.load(os.path.join(tuning_dir, "JtolSpikes_lst_HP3.npy"))
     rand_tol_HP3 = np.load(os.path.join(tuning_dir, "Jtol_lst_HP3.npy"))
     Jtol_best_HP3 = rand_tol_HP3[np.argmin(Jtol_HP3_spikes_lst)]
-else:
+
+if not USE_TUNING_CODE:
     #### Manually Supply Jtol values. Default set to zero
     Jtol_best_HP = np.zeros(3)
     Jtol_best_HP2 = np.zeros(3)
     Jtol_best_HP3 = np.zeros(3)
 
-print("Best Jtol configuration:", Jtol_best)
+print("Best Jtol configuration:", Jtol_best_HP)
 print("Best Jtol configuration HP-2:", Jtol_best_HP2)
 print("Best Jtol configuration HP-3:", Jtol_best_HP3)
 
@@ -573,14 +564,158 @@ for i in range(start_loop, len(Itot_mul)):
     
     activ_HP, activ_HP2, activ_HP3, activ_SP = [], [], [], []
     if not LOAD_FLAG:
-        start_loop_ii = 4
+        start_loop_ii = 0
         for ii in range(start_loop_ii, len(Isafety_lst)):
+            #########
+            ## Figuring out J-tol (E_tol in the manuscriot). We provide the code for tuning Etol at each possible configuration of Isafety and Itot but this is computationally expensive....
+            ## Set Jtol_tuning_once to false to use this code
+            #########
+
+            if (not Jtol_tuning_once) and USE_TUNING_CODE:
+                LOAD = False
+                tuning_dir = os.path.join(savedir_hp, 'Isafety%d/J-tol_Tuning' % (int(Isafety_lst[ii])))
+                if not os.path.exists(tuning_dir):
+                    os.makedirs(tuning_dir)
+                num_points = 30
+                np.random.seed(SEED)
+                rand_tol = np.random.uniform(low=0.1, high=0.7, size=(num_points, 3))
+                Jtol_HP_spikes_lst = []
+                Jtol_HP2_spikes_lst = []
+                Jtol_HP3_spikes_lst = []
+                if not LOAD:
+                    for i in range(rand_tol.shape[0]):
+                        print(">>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+                        print("Iteration %d" % (i + 1))
+                        print(">>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+
+                        Isafety = Isafety_lst[ii]  ## Tunded for the middle injected current
+                        Itotal = 2 * Isafety * Itot_mul[i]  ## Allow for HingePlace to design effective patterns
+
+                        Jtol = [rand_tol[i, 0] * Jdes, rand_tol[i, 1] * Jdes, rand_tol[i, 2] * Jdes]
+                        J_HP = efield_sim.HingePlace_3d(direction=direction, Jdes=Jdes, Isafety=Isafety, Jtol=Jtol, Itotal=Itotal, Af=[Af_x, Af_y, Af_z], Ac=[Ac_x, Ac_y, Ac_z], p=1)
+                        J_HP2 = efield_sim.HingePlace_3d(direction=direction, Jdes=Jdes, Isafety=Isafety, Jtol=Jtol, Itotal=Itotal, Af=[Af_x, Af_y, Af_z], Ac=[Ac_x, Ac_y, Ac_z], p=2)
+                        J_HP3 = efield_sim.HingePlace_3d(direction=direction, Jdes=Jdes, Isafety=Isafety, Jtol=Jtol, Itotal=Itotal, Af=[Af_x, Af_y, Af_z], Ac=[Ac_x, Ac_y, Ac_z],p=3)
+
+                        efield_sim._setJ(J_HP)
+                        J_lst = [J_HP] + [np.zeros(num_elec)] * 7
+                        efield_sim._setJ_lst(J_lst)
+                        spikes_nerve_HP, _ = model.stimulate(time_array=time_array, amp_array_lst=amp_array_lst, scale_lst=scale_lst, sampling_rate=sampling_rate, elec_field=efield_sim, scalp_flag=False)
+                        fname = os.path.join(tuning_dir, 'HP_tuning_cortex_activation%d.png' % i)
+                        model.plot_cortex_activation(savepath=fname, show=False)
+                        np.save(os.path.join(tuning_dir, "SpikesHP_Jtol%d.npy" % i), spikes_nerve_HP)
+                        np.save(os.path.join(tuning_dir, "Jtol%d_HP.npy" % i), rand_tol[i])
+
+                        efield_sim._setJ(J_HP2)
+                        J_lst = [J_HP2] + [np.zeros(num_elec)] * 7
+                        efield_sim._setJ_lst(J_lst)
+                        spikes_nerve_HP, _ = model.stimulate(time_array=time_array, amp_array_lst=amp_array_lst, scale_lst=scale_lst, sampling_rate=sampling_rate, elec_field=efield_sim, scalp_flag=False)
+                        fname = os.path.join(tuning_dir, 'HP2_tuning_cortex_activation%d.png' % i)
+                        model.plot_cortex_activation(savepath=fname, show=False)
+                        np.save(os.path.join(tuning_dir, "SpikesHP2_Jtol%d.npy" % i), spikes_nerve_HP)
+                        np.save(os.path.join(tuning_dir, "Jtol%d_HP2.npy" % i), rand_tol[i])
+
+                        efield_sim._setJ(J_HP3)
+                        J_lst = [J_HP3] + [np.zeros(num_elec)] * 7
+                        efield_sim._setJ_lst(J_lst)
+                        spikes_nerve_HP3, _ = model.stimulate(time_array=time_array, amp_array_lst=amp_array_lst, scale_lst=scale_lst, sampling_rate=sampling_rate, elec_field=efield_sim, scalp_flag=False)
+                        fname = os.path.join(tuning_dir, 'HP3_tuning_cortex_activation%d.png' % i)
+                        model.plot_cortex_activation(savepath=fname, show=False)
+                        np.save(os.path.join(tuning_dir, "SpikesHP3_Jtol%d.npy" % i), spikes_nerve_HP)
+                        np.save(os.path.join(tuning_dir, "Jtol%d_HP3.npy" % i), rand_tol[i])
+
+                for i in range(rand_tol.shape[0]):
+                    fname = os.path.join(tuning_dir, "SpikesHP_Jtol%d.npy" % i)
+                    if os.path.exists(fname):
+                        spikes_nerve_HP = np.load(fname)
+                        Jtol_HP_spikes_lst.append(np.sum(spikes_nerve_HP))
+                    else:
+                        Jtol_HP_spikes_lst.append(np.inf)
+
+                    fname = os.path.join(tuning_dir, "SpikesHP2_Jtol%d.npy" % i)
+                    if os.path.exists(fname):
+                        spikes_nerve_HP2 = np.load(fname)
+                        Jtol_HP2_spikes_lst.append(np.sum(spikes_nerve_HP2))
+                    else:
+                        Jtol_HP2_spikes_lst.append(np.inf)
+
+                    fname = os.path.join(tuning_dir, "SpikesHP3_Jtol%d.npy" % i)
+                    if os.path.exists(fname):
+                        spikes_nerve_HP3 = np.load(fname)
+                        Jtol_HP3_spikes_lst.append(np.sum(spikes_nerve_HP3))
+                    else:
+                        Jtol_HP3_spikes_lst.append(np.inf)
+
+                Jtol_HP_spikes_lst = np.array(Jtol_HP_spikes_lst)
+                np.save(os.path.join(tuning_dir, "JtolSpikes_lst_HP.npy"), Jtol_HP_spikes_lst)
+                np.save(os.path.join(tuning_dir, "Jtol_lst_HP.npy"), rand_tol)
+
+                Jtol_HP2_spikes_lst = np.array(Jtol_HP2_spikes_lst)
+                np.save(os.path.join(tuning_dir, "JtolSpikes_lst_HP2.npy"), Jtol_HP2_spikes_lst)
+                np.save(os.path.join(tuning_dir, "Jtol_lst_HP2.npy"), rand_tol)
+
+                Jtol_HP3_spikes_lst = np.array(Jtol_HP3_spikes_lst)
+                np.save(os.path.join(tuning_dir, "JtolSpikes_lst_HP3.npy"), Jtol_HP3_spikes_lst)
+                np.save(os.path.join(tuning_dir, "Jtol_lst_HP3.npy"), rand_tol)
+
+                xlabels = np.arange(rand_tol.shape[0]) + 1
+                plt.barh(xlabels, list(Jtol_HP_spikes_lst))
+                plt.xlabel("Diff. Jtol configurations", fontsize=19)
+                plt.ylabel("Total Spikes", fontsize=19)
+                plt.xticks(fontsize=19)
+                plt.yticks(fontsize=16)
+                plt.tight_layout()
+                plt.savefig(os.path.join(tuning_dir, "TuningBarPlot_HP.png"))
+                plt.close()
+
+                xlabels = np.arange(rand_tol.shape[0]) + 1
+                plt.barh(xlabels, list(Jtol_HP2_spikes_lst))
+                plt.xlabel("Diff. Jtol configurations", fontsize=19)
+                plt.ylabel("Total Spikes", fontsize=19)
+                plt.xticks(fontsize=19)
+                plt.yticks(fontsize=16)
+                plt.tight_layout()
+                plt.savefig(os.path.join(tuning_dir, "TuningBarPlot_HP2.png"))
+                plt.close()
+
+                xlabels = np.arange(rand_tol.shape[0]) + 1
+                plt.barh(xlabels, list(Jtol_HP3_spikes_lst))
+                plt.xlabel("Diff. Jtol configurations", fontsize=19)
+                plt.ylabel("Total Spikes", fontsize=19)
+                plt.xticks(fontsize=19)
+                plt.yticks(fontsize=16)
+                plt.tight_layout()
+                plt.savefig(os.path.join(tuning_dir, "TuningBarPlot_HP3.png"))
+                plt.close()
+
+
+                Jtol_HP_spikes_lst = np.load(os.path.join(tuning_dir, "JtolSpikes_lst_HP.npy"))
+                rand_tol_HP = np.load(os.path.join(tuning_dir, "Jtol_lst_HP.npy"))
+                Jtol_best_HP = rand_tol[np.argmin(Jtol_HP_spikes_lst)]
+
+                Jtol_HP2_spikes_lst = np.load(os.path.join(tuning_dir, "JtolSpikes_lst_HP2.npy"))
+                rand_tol_HP2 = np.load(os.path.join(tuning_dir, "Jtol_lst_HP2.npy"))
+                Jtol_best_HP2 = rand_tol_HP2[np.argmin(Jtol_HP2_spikes_lst)]
+
+                Jtol_HP3_spikes_lst_HP3 = np.load(os.path.join(tuning_dir, "JtolSpikes_lst_HP3.npy"))
+                rand_tol_HP3 = np.load(os.path.join(tuning_dir, "Jtol_lst_HP3.npy"))
+                Jtol_best_HP3 = rand_tol_HP3[np.argmin(Jtol_HP3_spikes_lst)]
+
+
+                print("Best Jtol configuration:", Jtol_best_HP)
+                print("Best Jtol configuration HP-2:", Jtol_best_HP2)
+                print("Best Jtol configuration HP-3:", Jtol_best_HP3)
+
+                Jtol_HP = [Jtol_best_HP[0] * Jdes, Jtol_best_HP[1] * Jdes, Jtol_best_HP[2] * Jdes]
+                Jtol_HP2 = [Jtol_best_HP2[0] * Jdes, Jtol_best_HP2[1] * Jdes, Jtol_best_HP2[2] * Jdes]
+                Jtol_HP3 = [Jtol_best_HP3[0] * Jdes, Jtol_best_HP3[1] * Jdes, Jtol_best_HP3[2] * Jdes]
+            ###########################################################################
+
             Isafety = Isafety_lst[ii]
             Itotal = 2*Itot_mul[i]*Isafety
             print(">>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
             print("Iteration %d"%(ii+1))
             print(">>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
-            J_HP = efield_sim.HingePlace_3d(direction=direction, Jdes=Jdes, Isafety=Isafety, Jtol=Jtol, Itotal=Itotal, Af=[Af_x, Af_y, Af_z], Ac=[Ac_x, Ac_y, Ac_z])
+            J_HP = efield_sim.HingePlace_3d(direction=direction, Jdes=Jdes, Isafety=Isafety, Jtol=Jtol_HP, Itotal=Itotal, Af=[Af_x, Af_y, Af_z], Ac=[Ac_x, Ac_y, Ac_z])
             J_HP2 = efield_sim.HingePlace_3d(direction=direction, Jdes=Jdes, Isafety=Isafety, Jtol=Jtol_HP2, Itotal=Itotal, Af=[Af_x, Af_y, Af_z], Ac=[Ac_x, Ac_y, Ac_z], p=2)
             J_HP3 = efield_sim.HingePlace_3d(direction=direction, Jdes=Jdes, Isafety=Isafety, Jtol=Jtol_HP3, Itotal=Itotal, Af=[Af_x, Af_y, Af_z], Ac=[Ac_x, Ac_y, Ac_z], p=3)
             J_SP = efield_sim.SparsePlace_3d(direction=direction, Jdes=Jdes, Isafety=Isafety, Itotal=Itotal, Af=[Af_x, Af_y, Af_z], Ac=[Ac_x, Ac_y, Ac_z])
@@ -622,7 +757,6 @@ for i in range(start_loop, len(Itot_mul)):
             efield_sim._setJ(J_HP)
             J_lst = [J_HP]+[np.zeros(num_elec)]*7
             efield_sim._setJ_lst(J_lst)
-            elec_field_lst = [efield_sim]+[None]*7
             
             spikes_HP, locations = model.stimulate(time_array=time_array, amp_array_lst=amp_array_lst, scale_lst=scale_lst, sampling_rate=sampling_rate, elec_field=efield_sim, scalp_flag=False)
             fname = os.path.join(savedir_hp,'HP_cortex_activation_Isafety%dmA.png'%int(Isafety))
@@ -632,7 +766,6 @@ for i in range(start_loop, len(Itot_mul)):
             efield_sim._setJ(J_HP2)
             J_lst = [J_HP2]+[np.zeros(num_elec)]*7
             efield_sim._setJ_lst(J_lst)
-            elec_field_lst = [efield_sim]+[None]*7
             
             spikes_HP2, locations = model.stimulate(time_array=time_array, amp_array_lst=amp_array_lst, scale_lst=scale_lst, sampling_rate=sampling_rate, elec_field=efield_sim, scalp_flag=False)
             fname = os.path.join(savedir_hp,'HP2_cortex_activation_Isafety%dmA.png'%int(Isafety))
@@ -647,13 +780,12 @@ for i in range(start_loop, len(Itot_mul)):
                 
                 spikes_HP3, locations = model.stimulate(time_array=time_array, amp_array_lst=amp_array_lst, scale_lst=scale_lst, sampling_rate=sampling_rate, elec_field=efield_sim, scalp_flag=False)
                 fname = os.path.join(savedir_hp,'HP3_cortex_activation_Isafety%dmA.png'%int(Isafety))
-                model.plot_cortex_activation(savepath=fname, show=True)
+                model.plot_cortex_activation(savepath=fname, show=False)
             
             ###### Calculate SP spikes
             efield_sim._setJ(J_SP)
             J_lst = [J_SP]+[np.zeros(num_elec)]*7
             efield_sim._setJ_lst(J_lst)
-            elec_field_lst = [efield_sim]+[None]*7
 
             scale_lst = [1] +[None]*7
             spikes_SP, _ = model.stimulate(time_array=time_array, amp_array_lst=amp_array_lst, scale_lst=scale_lst, sampling_rate=sampling_rate, elec_field=efield_sim, scalp_flag=False)
@@ -776,4 +908,3 @@ plt.xlim(xmax=np.max(Isafety_lst)*1.4)
 plt.tight_layout()
 plt.savefig(os.path.join(baseline_dir,"HPvsSP_RelInc.png"))
 plt.close()
-

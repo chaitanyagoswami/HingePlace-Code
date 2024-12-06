@@ -77,8 +77,7 @@ custom_grid = False
 theta_elec, phi_elec = None, None
 
 ## Depths for which E-field is calculated 
-r_neuron = np.linspace(7.7, 8, 40)
-r_lst=np.concatenate([r_neuron,np.array([radius_head-depth_nerve])])
+r_lst = np.linspace(7.7, 8, 40)
 
 CREATE_NEW_MODEL = False ## Set to True to create a new model
 forward_model_path = os.path.join(matrice_dir,'Patch%dmm'%(int(patch_size*10))) ## Directory Path where the model is saved or needs to be saved
@@ -309,15 +308,13 @@ amp_array_lst = [amp_array]+[None]*7
 scale_lst = [1] +[None]*7
 
 ## Figuring out J-tol
-p = np.random.uniform(0,2,size=(10,))
-p = 10**p
 p=np.arange(10)+1
 
 num_points = 20 
 np.random.seed(SEED)
 rand_tol = np.random.uniform(low=0.1, high=0.7, size=(num_points,3))
 best_spikes, best_tol = [], [] 
-LOAD_FLAG = True
+LOAD_FLAG = False
 verbose = False
 for m in range(len(p)):
     print(">>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")

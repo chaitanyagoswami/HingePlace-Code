@@ -1,5 +1,6 @@
 python3 find_opt_dir_HP.py # Finding optimum direction and threshold
-python3 HingePlace_sim.py 2 0 # Running Sec 5-2-1
+## Note that the Etol hyperparameters for HingePlace may require more tuning
+python3 HingePlace_sim.py 2 0 # Running Sec 5-2-1.
 python3 HingePlace_sim.py 1 0 # Running Sec 5-2-2
 python3 HingePlace_sim.py 3 0 # Running Sec 5-2-3
 python3 HingePlace_sim.py 2 1 # Running Sec 5-2-4
