@@ -1,3 +1,4 @@
+% Modified from the roast.m taken from roast v3.5 by Chaitanya Goswami to use a different electrode placement scheme. 
 function roast(subj,recipe,varargin)
 % roast(subj,recipe,varargin)
 %
