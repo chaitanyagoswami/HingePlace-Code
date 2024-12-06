@@ -10,5 +10,5 @@ A_brain = A_all(indBrain,:,:);
 nodeV = zeros(size(node,1),3);
 for i=1:3, nodeV(:,i) = node(:,i)/hdrInfo.pixdim(i); end
 locs_brain = nodeV(indBrain,1:3);
-save('forward_matrices/Aall.mat', "A_brain");
-save('forward_matrices/loc_all.mat', "locs_brain");
+save('Aall.mat', "A_brain");
+save('loc_all.mat', "locs_brain");
