@@ -1,1 +1,1 @@
-To design the forward matrix, first download the roast software from their github: https://github.com/andypotatohy/roast.
+To design the forward matrix, first download the roast software from their github: https://github.com/andypotatohy/roast. Replace the standard roast.m file with the modified version provided here, and run the command: roast([],'leadField','simulationTag','MNI152leadField'). Use the save_forward
