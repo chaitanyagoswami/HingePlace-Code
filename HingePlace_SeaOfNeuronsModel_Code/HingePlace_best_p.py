@@ -11,7 +11,7 @@ import matplotlib.animation as animation
 from matplotlib import cm
 import ray
 import logging
-from SparsePlace_ISP import SparsePlaceHumanISP
+from SphericalHeadModel import SphericalHeadModel
 from nerve_and_cell_model_helper import cart_to_sph, sph_to_cart
 from CancelPoints import CancelPointsSpherical
 import matplotlib.pyplot as plt
@@ -90,7 +90,7 @@ CREATE_NEW_MODEL = False ## Set to True to create a new model
 forward_model_path = os.path.join(matrice_dir,'Patch%dmm'%(int(patch_size*10))) ## Directory Path where the model is saved or needs to be saved
 
 ## Electric Field Simulator
-efield_sim = SparsePlaceHumanISP(r_lst=r_lst,cond_vec=cond_vec,radius_vec=radius_vec,patch_size=patch_size,elec_radius=elec_radius,elec_spacing=elec_spacing,max_l=L,spacing=spacing,custom_grid=custom_grid,theta_elec=theta_elec,phi_elec=phi_elec, save_title=forward_model_path) 
+efield_sim = SphericalHeadModel(r_lst=r_lst,cond_vec=cond_vec,radius_vec=radius_vec,patch_size=patch_size,elec_radius=elec_radius,elec_spacing=elec_spacing,max_l=L,spacing=spacing,custom_grid=custom_grid,theta_elec=theta_elec,phi_elec=phi_elec, save_title=forward_model_path)
 
 if CREATE_NEW_MODEL:
     efield_sim._calc_forward_model(print_elec_pattern=False, save=True, save_title=forward_model_path)
