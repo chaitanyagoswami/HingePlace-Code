@@ -1,7 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib import cm
 import matplotlib.animation as animation
 import time
 import ray
@@ -10,9 +8,10 @@ from neuron_model_parallel import NeuronSim
 from elec_field import UniformField
 from pulse_train import SingePulse_MonoPhasic
 import sys
-import math
-from nerve_and_cell_model_helper import cart_to_sph, sph_to_cart, cart_to_sph_v2, sph_to_cart_v2, fibonacci_sphere, sample_spherical
-
+from nerve_and_cell_model_helper import fibonacci_sphere
+import ray
+import logging
+ray.init(log_to_driver=False, logging_level=logging.FATAL)
 ##################################################################################
 ################## Uniform Experimental Setup ####################################
 ##################################################################################
@@ -113,11 +112,11 @@ sampling_rate = ray.put(sampling_rate)
 save_state_show = ray.put(False)
 print("Waveform Generated! Time Taken %s s"%(str(round(time.time()-start_time,3))))
 
-LOAD_DATA_FLAG = True 
+LOAD_DATA_FLAG = False
 thresh = np.empty(len(unit_vec))
 for l in range(len(unit_vec)):
     print(">>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<")
-    print("Starting Simulation for Electrode Location %d"%(l))
+    print("Starting Simulation for Direction %d"%(l))
     print(">>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<")
     round_start_time = time.time() 
     
@@ -134,20 +133,20 @@ for l in range(len(unit_vec)):
         ## Generate Electric Field Simulator
         start_time = time.time()
         print("Loading Electric Field Simulator...")
-        elec_field_lst = ray.put([UniformField(unit_vec=unit_vec[l])]+[None]*7)        
+        elec_field = ray.put(UniformField(unit_vec=unit_vec[l]))
         print("Electric Field Simulator Loaded! Time Taken %s s"%(str(round(time.time()-start_time,3))))
         
         ### Run Pyr Stimulation
         ######################################################################################
         cell_id = ray.put(cell_id_lst[np.random.randint(len(cell_id_lst))]) ## Randomly choosing a Pyr Morphology out of the 5 available
-        neuron = [NeuronSim.remote(human_or_mice=human_or_mice, cell_id=cell_id, temp=temp, dt=dt, elec_field_lst=elec_field_lst) for i in range(num_cores)] ## Initializing neuron model
+        neuron = [NeuronSim.remote(human_or_mice=human_or_mice, cell_id=cell_id, temp=temp, dt=dt, elec_field=elec_field) for i in range(num_cores)] ## Initializing neuron model
         print("Pyramidal Cell Id chosen %d."%(int(ray.get(cell_id))))
         ray.get([neuron[i]._set_xtra_param.remote(angle=angle, pos_neuron=loc) for i in range(num_cores)]) ## Setting Extracellular Stim Paramaters
         delay_init, delay_final = ray.put(2000),ray.put(5) ## ms, delay added to the stimulation before and after applying stimulation
 
   
         ## Deciding the range of amplitude across which to stimulate neurons
-        min_amp, max_amp = float(sys.argv[1]), float(sys.argv[2]) ## uA
+        min_amp, max_amp = 0, 200 ## uA
         while True:
             amp_rough = np.linspace(min_amp, max_amp, num_cores)
             results_rough = [neuron[i].stimulate.remote(time_array=time_array, amp_array_lst=amp_array_lst, scale_lst=[amp_rough[i]]+[None]*7, sampling_rate=sampling_rate, delay_init=delay_init, delay_final=delay_final, save_state_show=save_state_show, plot=False) for i in range(num_cores)]
