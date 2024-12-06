@@ -1,4 +1,4 @@
-Code for running computational studies presented in the work "Cell Specific Effects of Temporal Interference Stimulation on Cortical Function".
+Code for running computational studies in sea of neurons model.
 
 For running the code: 
 
