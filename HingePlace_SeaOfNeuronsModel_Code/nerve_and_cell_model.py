@@ -1,22 +1,11 @@
 from neuron_model_parallel import NeuronSim
 from matplotlib import colormaps
-from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.animation as animation
-from matplotlib import cm
-import plotly
-import pandas as pd
-import random
-import plotly
-from matplotlib import cm
 import matplotlib.pyplot as plt
-import os
 import numpy as np
-from scipy.signal import find_peaks
 import time
 import ray
-import logging
 from cfiber_parallel import CfiberSim
-from nerve_and_cell_model_helper import plot_scalp_model, sample_spherical, cart_to_sph, sph_to_cart, fibonacci_sphere, cart_to_sph_v2, sph_to_cart_v2
+from nerve_and_cell_model_helper import sample_spherical, cart_to_sph, sph_to_cart, cart_to_sph_v2
 
 class nerve_and_cell_model:
 

@@ -1,5 +1,4 @@
 import numpy as np
-from datetime import date
 
 class UniformField:
     def __init__(self, unit_vec=np.array([0,0,1])):

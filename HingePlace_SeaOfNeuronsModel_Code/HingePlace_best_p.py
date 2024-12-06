@@ -2,17 +2,11 @@ import sys
 import time
 import os
 import numpy as np
-from elec_field import ICMS 
 from pulse_train import SingePulse_MonoPhasic
 from nerve_and_cell_model import nerve_and_cell_model
-from matplotlib import colormaps
-from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.animation as animation
-from matplotlib import cm
 import ray
 import logging
 from SphericalHeadModel import SphericalHeadModel
-from nerve_and_cell_model_helper import cart_to_sph, sph_to_cart
 from CancelPoints import CancelPointsSpherical
 import matplotlib.pyplot as plt
 import matplotlib as mpl

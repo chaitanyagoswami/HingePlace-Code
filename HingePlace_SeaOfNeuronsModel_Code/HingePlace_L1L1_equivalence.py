@@ -1,20 +1,11 @@
-import sys
-import time
 import os
-import numpy as np
-from elec_field import ICMS 
-from matplotlib import colormaps
-from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.animation as animation
-from matplotlib import cm
-import ray
 import logging
 from SphericalHeadModel import *
-from nerve_and_cell_model_helper import cart_to_sph, sph_to_cart
 from CancelPoints import CancelPointsSpherical
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-#mpl.rcParams['figure.dpi'] = 600
+mpl.rcParams['figure.dpi'] = 600
+
 np.set_printoptions(suppress=True)
 ##################################################################################################################################
 ################################ Directory Structure & Parallelization Params #####3##############################################
